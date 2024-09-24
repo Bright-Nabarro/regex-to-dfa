@@ -7,6 +7,10 @@
 #include <fstream>
 #include <format>
 #include <cassert>
+#include <iostream>
+
+
+#define PRINT_POS(tree, node) (tree)->Display3Pos( (node), std::cout)
 
 namespace
 {
@@ -58,18 +62,22 @@ public:
         return leaves.size();
     }
 
-	/// 节点没有特定标识, 必须保证每个节点不重名
-	void CreateDotFile(std::string_view filepath) const;
+	//newly added
+public:
+	void DisplayState(std::string_view filepath) const;
+	
+	void DisplayFollowPos(std::ostream& os) const;
 
 private:
     class Node
     {
     public:
         virtual ~Node() = 0;
-		virtual void Display(std::ofstream& out) const = 0;
+		virtual void Display(std::ofstream& out, const RegexTree* tree) const = 0;
 		///first为原始字符，second为特定标识符
 		virtual std::pair<std::string, std::string> ToString() const = 0;
 
+		///leaves索引，firstpos && lastpos 只会包含leaves
         std::unordered_set<std::size_t> firstpos;
         std::unordered_set<std::size_t> lastpos;
         bool nullable;
@@ -97,7 +105,7 @@ private:
             nullable = left->nullable && right->nullable;
         }
 
-		void Display(std::ofstream& out) const override
+		void Display(std::ofstream& out, const RegexTree* tree) const override
 		{
 			auto this_id = ToString();
 			assert(left != nullptr);
@@ -114,8 +122,9 @@ private:
 			out << std::format(R"("{}" -> "{}")", this_id.second, right_id.second)
 				<< '\n';
 
-			left->Display(out);
-			right->Display(out);
+			PRINT_POS(tree, *this);
+			left->Display(out, tree);
+			right->Display(out, tree);
 		}
 
 		std::pair<std::string, std::string> ToString() const override
@@ -143,7 +152,7 @@ private:
             nullable = left->nullable || right->nullable;
         }
 
-		void Display(std::ofstream& out) const override
+		void Display(std::ofstream& out, const RegexTree* tree) const override
 		{
 			auto this_id = ToString();
 			assert(left != nullptr);
@@ -159,9 +168,9 @@ private:
 			auto right_id = right->ToString();
 			out << std::format(R"("{}" -> "{}")", this_id.second, right_id.second)
 				<< '\n';
-
-			left->Display(out);
-			right->Display(out);
+			PRINT_POS(tree, *this);
+			left->Display(out, tree);
+			right->Display(out, tree);
 		}
 
 		std::pair<std::string, std::string> ToString() const override
@@ -184,7 +193,7 @@ private:
             nullable = true;
         }
 
-		void Display(std::ofstream& out) const override
+		void Display(std::ofstream& out, const RegexTree* tree) const override
 		{
 			assert(child != nullptr);
 			auto this_id = ToString();
@@ -195,7 +204,8 @@ private:
 			out << std::format(R"("{}" -> "{}")", this_id.second, child_id.second)
 				<< '\n';
 
-			child->Display(out);
+			PRINT_POS(tree, *this);
+			child->Display(out, tree);
 		}
 
 		std::pair<std::string, std::string> ToString() const override
@@ -216,11 +226,12 @@ private:
             nullable = false;
         }
 
-		void Display(std::ofstream& out) const override
+		void Display(std::ofstream& out, const RegexTree* tree) const override
 		{
 			auto this_id = ToString();
 			out << std::format(R"("{}" [label = "{}"])", this_id.second, this_id.first)
 				<< '\n';
+			PRINT_POS(tree, *this);
 		}
 
 		std::pair<std::string, std::string> ToString() const override
@@ -241,11 +252,13 @@ private:
             firstpos.insert(end_pos);
         }
 
-		void Display(std::ofstream& out) const override
+		void Display(std::ofstream& out, const RegexTree* tree) const override
 		{
 			auto this_id = ToString();
 			out << std::format(R"("{}" [label = "{}"])", this_id.second, this_id.first)
 				<< '\n';
+
+			PRINT_POS(tree, *this);
 		}
 
 		std::pair<std::string, std::string> ToString() const override
@@ -254,7 +267,7 @@ private:
 		}
     };
 
-    std::unique_ptr<Node> BuildTree(std::string_view regex, bool star = false);
+	std::unique_ptr<Node> BuildTree(std::string_view regex, bool star = false);
 
     /// Create an EndNode and concatenate it with the root of the regex tree.
     std::unique_ptr<Node> ConcatEndNode(std::unique_ptr<RegexTree::Node> root);
@@ -262,8 +275,11 @@ private:
     std::unordered_set<char> Alphabet(Node* node);
     void CalcFollowPos(Node* node);
 
+	friend void TestRegexTree();
+	friend class DisplayPos;
+	void Display3Pos(const Node& node, std::ostream& os) const;
+
     std::vector<LeafNode*> leaves;
     std::unique_ptr<Node> root;
     std::unordered_set<char> alphabet;
 };
-

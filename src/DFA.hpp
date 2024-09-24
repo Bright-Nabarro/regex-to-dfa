@@ -1,6 +1,6 @@
 #pragma once
 
-#include "RegexTree.h"
+#include "RegexTree.hpp"
 
 #include <string_view>
 #include <vector>
@@ -46,7 +46,7 @@ public:
 
     /// Generate a dot file that can be used to create a graphical
     /// representation of the DFA.
-    void CreateDotFile(std::string_view filename) const;
+    void DisplayState(std::string_view filename) const;
 
 private:
     std::vector<std::unique_ptr<State>> states;
