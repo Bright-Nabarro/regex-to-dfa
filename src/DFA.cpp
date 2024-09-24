@@ -1,5 +1,5 @@
-#include "DFA.h"
-#include "RegexTree.h"
+#include "DFA.hpp"
+#include "RegexTree.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -94,10 +94,11 @@ DFA::DFA(const RegexTree& tree)
         states.emplace_back(std::move(dstate.state));
 }
 
-void DFA::CreateDotFile(std::string_view filename) const
+void DFA::DisplayState(std::string_view filename) const
 {
     std::ofstream out(filename.data());
-    out << "digraph finite_state_machine {" << '\n'
+	out  << "```dot\n"
+    	<< "digraph finite_state_machine {" << '\n'
         << "  rankdir=LR;" << '\n'
         << "  size=\"8,5\"" << '\n'
         << "  node [shape = circle]; q0" << '\n';
@@ -126,6 +127,7 @@ void DFA::CreateDotFile(std::string_view filename) const
                 << edge_label << "\" ];" << '\n';
         }
     }
-    out << "}" << '\n';
+    out << "}" << '\n'
+		<< "```\n";
 }
 

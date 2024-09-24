@@ -1,4 +1,4 @@
-#include "RegexTree.h"
+#include "RegexTree.hpp"
 
 #include <cstddef>
 #include <memory>
@@ -186,14 +186,57 @@ void RegexTree::CalcFollowPos(RegexTree::Node* n)
 }
 
 
-void RegexTree::CreateDotFile(std::string_view filepath) const
+void RegexTree::DisplayState(std::string_view filepath) const
 {
 	std::ofstream outfile { filepath.data() };
-	outfile << "digraph regex_tree {\n";
-	outfile << "node [shape=plaintext]\n";
+	outfile << "``` dot\n"
+			<< "digraph regex_tree {\n"
+			<< "node [shape=plaintext]\n";
 	if (root != nullptr)
-		root->Display(outfile);
-	outfile << "}\n";
+		root->Display(outfile, this);
+	outfile << "}\n"
+			<< "```\n";
 }
 
+
+void RegexTree::DisplayFollowPos(std::ostream& os) const
+{
+	for(auto leave : leaves)
+	{
+		os << std::format("{}: ", leave->label);
+		for (auto leave_idx : leave->followpos)
+		{
+			if (leave_idx == leaves.size())
+				os << std::format("{}, ", '#');
+			else
+				os << std::format("{}, ", leaves[leave_idx]->label);
+		}
+		os << std::endl;
+	}
+}
+
+void RegexTree::Display3Pos(const Node& node, std::ostream& os) const
+{
+	os << std::format("{}[{}]: \n", node.ToString().first, node.ToString().second);
+	os << std::format("\tnullable: {}\n", node.nullable);
+	os << std::format("\tfirstpos: \n\t\t");
+
+	auto print_leave = [&](size_t idx){
+		if (idx == leaves.size())
+			os << "#, ";
+		else
+			os << std::format("{}, ", leaves[idx]->label);
+	};
+	for (auto leave_idx : node.firstpos)
+	{
+		print_leave(leave_idx);
+	}
+
+	os << std::format("\n\tlastpos: \n\t\t");
+	for (auto leave_idx : node.lastpos)
+	{
+		print_leave(leave_idx);
+	}
+	os << std::endl;
+}
 
