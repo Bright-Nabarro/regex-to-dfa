@@ -1,3 +1,4 @@
 regex-to-dfa
 *.gv
 output/
+output.*
